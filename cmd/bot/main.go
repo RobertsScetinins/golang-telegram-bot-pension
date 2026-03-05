@@ -12,9 +12,15 @@ import (
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/router"
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Cannot load the env file")
+	}
 
 	token := os.Getenv("TELEGRAM_BOT_TOKEN")
 
@@ -33,6 +39,7 @@ func main() {
 	r := router.NewRouter()
 
 	r.Register("reel", handlers.Reels)
+	r.Register("tiktok", handlers.TikTok)
 
 	botClient.RegisterHandler(bot.HandlerTypeMessageText, "/status", bot.MatchTypeExact,
 		func(ctx context.Context, botClient *bot.Bot, update *models.Update) {
