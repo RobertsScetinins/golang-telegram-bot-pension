@@ -5,44 +5,63 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/database"
+	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/logger"
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/models"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5"
 )
 
 type MessageRepository struct {
-	db *pgxpool.Pool
+	db database.DBTX
 }
 
-func NewMessageRepository(db *pgxpool.Pool) *MessageRepository {
+func NewMessageRepository(db database.DBTX) *MessageRepository {
 	return &MessageRepository{db}
 }
 
 func (r *MessageRepository) Save(ctx context.Context, m *models.Message) error {
 	query := `
-	INSERT INTO messages
-	(chat_id, message_id, username, text)
-	VALUES ($1,$2,$3,$4)
+		INSERT INTO messages
+		(chat_id, message_id, username, text)
+		VALUES (@chat_id, @message_id, @username, @text)
 	`
 
-	_, err := r.db.Exec(
-		ctx,
-		query,
-		m.ChatID,
-		m.MessageId,
-		m.Username,
-		m.Text,
-	)
+	_, err := r.db.Exec(ctx, query, pgx.NamedArgs{
+		"chat_id":    m.ChatID,
+		"message_id": m.MessageId,
+		"username":   m.Username,
+		"text":       m.Text,
+	})
 
 	return err
 }
 
-func (r *MessageRepository) GetLastMessages(ctx context.Context, chatID int64, limit int) ([]models.Message, error) {
+func (r *MessageRepository) Update(ctx context.Context, m *models.Message) error {
+	logger.DebugJson(m)
 	query := `
-	SELECT id, message_id, username, text, created_at
-	FROM messages
-	WHERE chat_id=$1
-	ORDER BY created_at DESC
-	LIMIT $2
+		UPDATE messages
+		SET text=@text, is_edited=@is_edited, updated_at=@updated_at
+		WHERE chat_id=@chat_id AND message_id=@message_id
+	`
+
+	_, err := r.db.Exec(ctx, query, pgx.NamedArgs{
+		"chat_id":    m.ChatID,
+		"message_id": m.MessageId,
+		"text":       m.Text,
+		"is_edited":  m.IsEdited,
+		"updated_at": m.UpdatedAt,
+	})
+
+	return err
+}
+
+func (r *MessageRepository) GetLastMessages(ctx context.Context, chatID int64, limit int) ([]*models.Message, error) {
+	query := `
+		SELECT id, message_id, username, text, created_at
+		FROM messages
+		WHERE chat_id=$1
+		ORDER BY created_at DESC
+		LIMIT $2
 	`
 
 	rows, err := r.db.Query(ctx, query, chatID, limit)
@@ -52,27 +71,8 @@ func (r *MessageRepository) GetLastMessages(ctx context.Context, chatID int64, l
 
 	defer rows.Close()
 
-	var messages []models.Message
-
-	for rows.Next() {
-		var m models.Message
-
-		err := rows.Scan(
-			&m.ID,
-			&m.MessageId,
-			&m.Username,
-			&m.Text,
-			&m.CreatedAt,
-		)
-
-		if err != nil {
-			return nil, err
-		}
-
-		messages = append(messages, m)
-	}
-
-	if err := rows.Err(); err != nil {
+	messages, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByPos[models.Message])
+	if err != nil {
 		return nil, err
 	}
 
@@ -82,12 +82,14 @@ func (r *MessageRepository) GetLastMessages(ctx context.Context, chatID int64, l
 func (r *MessageRepository) TrimMessages(ctx context.Context, chatID int64, limit int) error {
 	query := `
 		DELETE FROM messages
-		WHERE id IN(
+		WHERE chat_id = $1
+		AND id < (
 			SELECT id
 			FROM messages
-			WHERE chat_id=$1
+			WHERE chat_id = $1
 			ORDER BY created_at DESC
 			OFFSET $2
+			LIMIT 1
 		)
 	`
 	_, err := r.db.Exec(ctx, query, chatID, limit)
@@ -112,28 +114,16 @@ func (r *MessageRepository) GetMessagesInRange(ctx context.Context, chatID int64
 
 	defer rows.Close()
 
-	var messages []models.Message
-	for rows.Next() {
-		var m models.Message
-		err := rows.Scan(
-			&m.ID,
-			&m.ChatID,
-			&m.Username,
-			&m.Text,
-			&m.CreatedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan message %w", err)
-		}
-
-		messages = append(messages, m)
+	messages, err := pgx.CollectRows(rows, pgx.RowToStructByPos[models.Message])
+	if err != nil {
+		return nil, err
 	}
 
 	return messages, nil
 }
 
 func (r *MessageRepository) CountMessages(ctx context.Context, chatID int64) (int64, error) {
-	query := `SELECT COUNT(*) FROM messages WHERE chat_d = $1`
+	query := `SELECT COUNT(*) FROM messages WHERE chat_id = $1`
 
 	var count int64
 	err := r.db.QueryRow(ctx, query, chatID).Scan(&count)
