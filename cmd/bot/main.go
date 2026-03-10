@@ -50,9 +50,10 @@ func main() {
 				handlers.Clown(ctx, bot, update)
 			}
 
-			if update.Message.Chat.Type == models.ChatTypePrivate {
-				handlers.Duplicator(ctx, bot, update)
-			}
+			// depricated for now, maybe one day ...
+			// if update.Message.Chat.Type == models.ChatTypePrivate {
+			// 	handlers.Duplicator(ctx, bot, update)
+			// }
 
 			r.Handle(ctx, bot, update)
 		})
