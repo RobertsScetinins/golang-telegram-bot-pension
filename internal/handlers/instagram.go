@@ -9,7 +9,7 @@ import (
 	"github.com/go-telegram/bot/models"
 )
 
-func Reels(ctx context.Context, b *bot.Bot, update *models.Update) {
+func Instagram(ctx context.Context, b *bot.Bot, update *models.Update) {
 	reelId, isValid := helpers.ExtractReelId(update.Message.Text)
 
 	if isValid {
