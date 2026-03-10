@@ -31,7 +31,7 @@ func main() {
 
 	r := router.NewRouter()
 
-	r.Register("reel", handlers.Reels)
+	r.Register("instagram", handlers.Instagram)
 	r.Register("tiktok", handlers.TikTok)
 
 	botClient.RegisterHandler(bot.HandlerTypeMessageText, "/status", bot.MatchTypeExact,
