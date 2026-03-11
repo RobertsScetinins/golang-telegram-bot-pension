@@ -19,16 +19,21 @@ func FactCheck(ctx context.Context, b *bot.Bot, update *models.Update) {
 	hasReply := update.Message.ReplyToMessage != nil
 
 	var claim string
+	var userComment string
+
+	if hasTextAfterCommand {
+		userComment = strings.TrimSpace(parts[1])
+	}
 
 	if hasReply && hasTextAfterCommand {
-		repliedText := update.Message.ReplyToMessage.Text
-		userComment := strings.TrimSpace(parts[1])
-		claim = fmt.Sprintf("User comment:[%s] Replied content:[%s]", userComment, repliedText)
+		claim = fmt.Sprintf(
+			"User comment:[%s] Replied content:[%s]",
+			userComment,
+			update.Message.ReplyToMessage.Text)
 	} else if hasReply {
 		claim = update.Message.ReplyToMessage.Text
 	} else if hasTextAfterCommand {
-		claim = strings.TrimSpace(parts[1])
-
+		claim = userComment
 	}
 
 	if strings.TrimSpace(claim) == "" {
