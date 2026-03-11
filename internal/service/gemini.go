@@ -13,7 +13,7 @@ import (
 )
 
 const geminiAuthHeader = "x-goog-api-key"
-const geminigenerateContent = "/models/gemini-3.1-flash-lite-preview:generateContent"
+const geminigenerateContent = "/models/gemini-2.5-flash-lite:generateContent"
 const generatorSeconds = 5
 const defaultTimeout = 60
 
@@ -106,6 +106,11 @@ func GenResponse(ctx context.Context, prompt string) (string, error) {
 				},
 			},
 		},
+		"tools": []any{
+			map[string]any{
+				"google_search": map[string]any{},
+			},
+		},
 	}
 
 	body, err := json.Marshal(payload)
@@ -125,7 +130,7 @@ func GenResponse(ctx context.Context, prompt string) (string, error) {
 		return "", err
 	}
 	req.Header.Set(geminiAuthHeader, apiKey)
-	
+
 	req = req.WithContext(ctx)
 	resp, err := client.Do(req)
 	if err != nil {
