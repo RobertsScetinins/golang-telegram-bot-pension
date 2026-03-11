@@ -43,9 +43,12 @@ func FactCheck(ctx context.Context, b *bot.Bot, update *models.Update) {
 	}
 
 	fmt.Println("[INFO] User claim:", claim)
-
-	// Call Gemini API
-	check := service.GenResponse(claim)
+	check, err := service.GenResponse(ctx, claim)
+	if err != nil {
+		fmt.Println("[ERROR] Gemini API failed:", err)
+		utils.Reply(ctx, b, update, "⚠️ Не удалось проверить факт. Попробуйте позже.")
+		return
+	}
 	fmt.Println("[INFO] Gemini response received")
 
 	utils.Reply(ctx, b, update, check)
