@@ -12,17 +12,31 @@ import (
 )
 
 func FactCheck(ctx context.Context, b *bot.Bot, update *models.Update) {
-
 	userText := update.Message.Text
-	parts := strings.SplitN(userText, " ", 2)
 
-	if len(parts) < 2 || strings.TrimSpace(parts[1]) == "" {
+	parts := strings.SplitN(userText, " ", 2)
+	hasTextAfterCommand := len(parts) > 1 && strings.TrimSpace(parts[1]) != ""
+	hasReply := update.Message.ReplyToMessage != nil
+
+	var claim string
+
+	if hasReply && hasTextAfterCommand {
+		repliedText := update.Message.ReplyToMessage.Text
+		userComment := strings.TrimSpace(parts[1])
+		claim = fmt.Sprintf("User comment:[%s] Replied content:[%s]", userComment, repliedText)
+	} else if hasReply {
+		claim = update.Message.ReplyToMessage.Text
+	} else if hasTextAfterCommand {
+		claim = strings.TrimSpace(parts[1])
+
+	}
+
+	if strings.TrimSpace(claim) == "" {
 		fmt.Println("[WARN] No claim provided by user")
-		utils.Reply(ctx, b, update, "Please provide a claim after /factcheck")
+		utils.Reply(ctx, b, update, "Please provide a claim after /factcheck or chose a reply")
 		return
 	}
 
-	claim := strings.TrimSpace(parts[1])
 	fmt.Println("[INFO] User claim:", claim)
 
 	// Call Gemini API
@@ -30,5 +44,4 @@ func FactCheck(ctx context.Context, b *bot.Bot, update *models.Update) {
 	fmt.Println("[INFO] Gemini response received")
 
 	utils.Reply(ctx, b, update, check)
-
 }
