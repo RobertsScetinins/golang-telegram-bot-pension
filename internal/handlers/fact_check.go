@@ -31,7 +31,12 @@ func FactCheck(ctx context.Context, b *bot.Bot, update *models.Update) {
 			userComment,
 			update.Message.ReplyToMessage.Text)
 	} else if hasReply {
-		claim = update.Message.ReplyToMessage.Text
+		// TODO: we might need to support other fields as well
+		if strings.TrimSpace(update.Message.ReplyToMessage.Text) != "" {
+			claim = update.Message.ReplyToMessage.Text
+		} else {
+			claim = update.Message.ReplyToMessage.Caption
+		}
 	} else if hasTextAfterCommand {
 		claim = userComment
 	}
