@@ -27,7 +27,7 @@ func FactCheck(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 	if hasReply && hasTextAfterCommand {
 		claim = fmt.Sprintf(
-			"User comment:[%s] Replied content:[%s]",
+			"Комментарий пользователя: [%s] Ответ на сообщение: [%s]",
 			userComment,
 			update.Message.ReplyToMessage.Text)
 	} else if hasReply {
@@ -38,7 +38,7 @@ func FactCheck(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 	if strings.TrimSpace(claim) == "" {
 		fmt.Println("[WARN] No claim provided by user")
-		utils.Reply(ctx, b, update, "Please provide a claim after /factcheck or chose a reply")
+		utils.Reply(ctx, b, update, "Пожалуйста, укажите утверждение после /factcheck или выберите сообщение для ответа")
 		return
 	}
 
