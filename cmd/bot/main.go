@@ -42,6 +42,11 @@ func main() {
 			})
 		})
 
+	botClient.RegisterHandler(bot.HandlerTypeMessageText, "/factcheck", bot.MatchTypePrefix,
+		func(ctx context.Context, botClient *bot.Bot, update *models.Update) {
+			handlers.FactCheck(ctx, botClient, update)
+		})
+
 	botClient.RegisterHandler(bot.HandlerTypeMessageText, "", bot.MatchTypeContains,
 		func(ctx context.Context, bot *bot.Bot, update *models.Update) {
 			text := update.Message.Text
