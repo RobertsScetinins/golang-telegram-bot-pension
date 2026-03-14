@@ -47,6 +47,11 @@ func main() {
 			handlers.FactCheck(ctx, botClient, update)
 		})
 
+	botClient.RegisterHandler(bot.HandlerTypePhotoCaption, "/look", bot.MatchTypePrefix,
+		func(ctx context.Context, bot *bot.Bot, update *models.Update) {
+			handlers.Look(ctx, bot, update)
+		})
+
 	botClient.RegisterHandler(bot.HandlerTypeMessageText, "", bot.MatchTypeContains,
 		func(ctx context.Context, bot *bot.Bot, update *models.Update) {
 			text := update.Message.Text

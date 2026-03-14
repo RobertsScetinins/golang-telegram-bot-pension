@@ -13,6 +13,7 @@ import (
 
 func FactCheck(ctx context.Context, b *bot.Bot, update *models.Update) {
 	userText := update.Message.Text
+	geminiService := service.NewGeminiService()
 
 	parts := strings.SplitN(userText, " ", 2)
 	hasTextAfterCommand := len(parts) > 1 && strings.TrimSpace(parts[1]) != ""
@@ -48,7 +49,7 @@ func FactCheck(ctx context.Context, b *bot.Bot, update *models.Update) {
 	}
 
 	fmt.Println("[INFO] User claim:", claim)
-	check, err := service.GenResponse(ctx, claim)
+	check, err := geminiService.GenResponseWithPreset(ctx, claim, "fact_check")
 	if err != nil {
 		fmt.Println("[ERROR] Gemini API failed:", err)
 		utils.Reply(ctx, b, update, "⚠️ Не удалось проверить факт. Попробуйте позже.")

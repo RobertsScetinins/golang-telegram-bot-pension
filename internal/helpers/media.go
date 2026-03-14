@@ -1,6 +1,9 @@
 package helpers
 
 import (
+	"mime"
+	"path"
+
 	"github.com/go-telegram/bot/models"
 )
 
@@ -56,4 +59,15 @@ func ProcessMedia(update *models.Update) (*MediaData, error) {
 	}
 
 	return &MediaData{}, nil
+}
+
+func GetMimeTypeFromUrl(url string) string {
+	ext := path.Ext(url)
+	mimeType := mime.TypeByExtension(ext)
+
+	if mimeType == "" {
+		return ""
+	}
+
+	return mimeType
 }
