@@ -40,7 +40,7 @@ func Look(ctx context.Context, b *bot.Bot, update *models.Update) {
 		return
 	}
 
-	ans, err := geminiService.GenResponseWithMediaPreset(ctx, userComment, fileLink, "analyze_image")
+	ans, err := geminiService.GenResponseWithMediaPreset(ctx, userComment, fileLink, service.PromptTypeAnalyze)
 	if err != nil {
 		fmt.Println("[WARN] Gemini API failed:", err)
 		utils.Reply(ctx, b, update, "Не удалось обработать изображение. Возможно, формат не поддерживается или сервис временно недоступен.")
