@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/handlers"
@@ -47,7 +48,9 @@ func main() {
 			handlers.FactCheck(ctx, botClient, update)
 		})
 
-	botClient.RegisterHandler(bot.HandlerTypePhotoCaption, "/look", bot.MatchTypePrefix,
+	botClient.RegisterHandlerMatchFunc(func(update *models.Update) bool {
+		return update.Message != nil && (strings.HasPrefix(update.Message.Text, "/look") || strings.HasPrefix(update.Message.Caption, "/look"))
+	},
 		func(ctx context.Context, bot *bot.Bot, update *models.Update) {
 			handlers.Look(ctx, bot, update)
 		})

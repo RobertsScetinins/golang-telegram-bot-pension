@@ -27,7 +27,7 @@ func Look(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 	fileLink, err := service.GetDownloadLink(b, helpers.GetFileUrl(mediaData.FileId, token))
 	if err != nil {
-		fmt.Println("[WARN]", fmt.Sprintf("[WARN] Failed to get download link for file %s: %v", mediaData.FileId, err))
+		fmt.Println("[WARN]", fmt.Sprintf("Failed to get download link for file %s: %v", mediaData.FileId, err))
 		utils.Reply(ctx, b, update, "Не удалось получить ссылку для скачивания. Попробуйте позже.")
 		return
 	}
