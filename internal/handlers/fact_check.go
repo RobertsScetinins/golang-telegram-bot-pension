@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/helpers"
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/service"
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/utils"
 	"github.com/go-telegram/bot"
@@ -13,19 +14,14 @@ import (
 
 func FactCheck(ctx context.Context, b *bot.Bot, update *models.Update) {
 	userText := update.Message.Text
+	geminiService := service.NewGeminiService()
 
-	parts := strings.SplitN(userText, " ", 2)
-	hasTextAfterCommand := len(parts) > 1 && strings.TrimSpace(parts[1]) != ""
 	hasReply := update.Message.ReplyToMessage != nil
+	userComment, hasUserComment := helpers.GetCommandArgs(userText)
 
 	var claim string
-	var userComment string
 
-	if hasTextAfterCommand {
-		userComment = strings.TrimSpace(parts[1])
-	}
-
-	if hasReply && hasTextAfterCommand {
+	if hasReply && hasUserComment {
 		claim = fmt.Sprintf(
 			"Комментарий пользователя: [%s] Ответ на сообщение: [%s]",
 			userComment,
@@ -37,7 +33,7 @@ func FactCheck(ctx context.Context, b *bot.Bot, update *models.Update) {
 		} else {
 			claim = update.Message.ReplyToMessage.Caption
 		}
-	} else if hasTextAfterCommand {
+	} else if hasUserComment {
 		claim = userComment
 	}
 
@@ -48,7 +44,7 @@ func FactCheck(ctx context.Context, b *bot.Bot, update *models.Update) {
 	}
 
 	fmt.Println("[INFO] User claim:", claim)
-	check, err := service.GenResponse(ctx, claim)
+	check, err := geminiService.GenResponseWithPreset(ctx, claim, service.PromptTypeFactCheck)
 	if err != nil {
 		fmt.Println("[ERROR] Gemini API failed:", err)
 		utils.Reply(ctx, b, update, "⚠️ Не удалось проверить факт. Попробуйте позже.")

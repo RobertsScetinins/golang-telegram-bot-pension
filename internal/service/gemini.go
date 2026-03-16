@@ -10,12 +10,33 @@ import (
 	"net/url"
 	"os"
 	"time"
+
+	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/helpers"
 )
 
 const geminiAuthHeader = "x-goog-api-key"
 const geminigenerateContent = "/models/gemini-2.5-flash-lite:generateContent"
 const generatorSeconds = 5
 const defaultTimeout = 60
+
+type GeminiFileData struct {
+	MimeType string `json:"mime_type"`
+	FileURI  string `json:"file_uri"`
+}
+
+type GeminiPart struct {
+	Text     string          `json:"text,omitempty"`
+	FileData *GeminiFileData `json:"file_data,omitempty"`
+}
+
+type GeminiContent struct {
+	Parts []GeminiPart `json:"parts"`
+}
+
+type GeminiRequest struct {
+	Contents []GeminiContent `json:"contents"`
+	Tools    []interface{}   `json:"tools,omitempty"`
+}
 
 type GeminiResponse struct {
 	Candidates []struct {
@@ -25,6 +46,20 @@ type GeminiResponse struct {
 			} `json:"parts"`
 		} `json:"content"`
 	} `json:"candidates"`
+}
+
+type GeminiService struct {
+	promptManaget PromptManager
+	httpClient    *http.Client
+}
+
+func NewGeminiService() *GeminiService {
+	return &GeminiService{
+		promptManaget: *NewPromptManager(),
+		httpClient: &http.Client{
+			Timeout: time.Second * defaultTimeout,
+		},
+	}
 }
 
 func GetStreamResponse(ctx context.Context, prompt string) <-chan string {
@@ -63,11 +98,9 @@ func getBaseUrl() (string, error) {
 	return apiKey, nil
 }
 
-func GenResponse(ctx context.Context, prompt string) (string, error) {
+func (s *GeminiService) GenResponse(ctx context.Context, prompt string) (string, error) {
 	fmt.Println("[INFO] Starting GenResponse")
-	client := &http.Client{
-		Timeout: time.Second * defaultTimeout,
-	}
+
 	baseURL, err := getBaseUrl()
 	if err != nil {
 		return "", err
@@ -80,42 +113,93 @@ func GenResponse(ctx context.Context, prompt string) (string, error) {
 
 	method := "POST"
 
-	text := fmt.Sprintf(`
-		Вы – помощник по проверке фактов.
+	parts := []GeminiPart{
+		{Text: prompt},
+	}
 
-		Правила:
-		- Сохраняйте язык утверждения.
-		- Отвечайте кратко.
-		- Всегда отвечайте на русском языке.
-		- Если утверждение касается событий, дат, статистики или проверяемых фактов, используйте интернет для поиска свежей информации.
-		- Если утверждение субъективное или личное мнение – не гуглите.
-
-		Формат вывода:
-		Утверждение: <claim>
-		Оценка: Факт | Ложь | Вводящее в заблуждение | Мнение | Неверифицируемо
-		Объяснение: <максимум 40 слов>
-		Источники: <список ссылок, если использовалась проверка в интернете>
-
-		Утверждение: %s
-		`, prompt)
-
-	payload := map[string]any{
-		"contents": []any{
-			map[string]any{
-				"parts": []any{
-					map[string]any{
-						"text": text,
-					},
-				},
+	payload := GeminiRequest{
+		Contents: []GeminiContent{
+			{
+				Parts: parts,
 			},
 		},
-		"tools": []any{
+		Tools: []any{
 			map[string]any{
 				"google_search": map[string]any{},
 			},
 		},
 	}
 
+	return s.executeRequest(ctx, method, url, payload)
+}
+
+func (s *GeminiService) GetResponseWithMedia(ctx context.Context, fileLink string, prompt string) (string, error) {
+	baseURL, err := getBaseUrl()
+	if err != nil {
+		return "", err
+	}
+
+	url, err := url.JoinPath(baseURL, geminigenerateContent)
+	if err != nil {
+		return "", fmt.Errorf("failed to join URL: %w", err)
+	}
+
+	method := "POST"
+
+	systemPrompt := fmt.Sprintf(`%s`, prompt)
+
+	parts := []GeminiPart{
+		{Text: systemPrompt},
+	}
+
+	mimeType := helpers.GetMimeTypeFromUrl(fileLink)
+
+	parts = append(parts, GeminiPart{
+		FileData: &GeminiFileData{
+			MimeType: mimeType,
+			FileURI:  fileLink,
+		},
+	})
+
+	payload := GeminiRequest{
+		Contents: []GeminiContent{
+			{
+				Parts: parts,
+			},
+		},
+		Tools: []any{
+			map[string]any{
+				"google_search": map[string]any{},
+			},
+		},
+	}
+
+	return s.executeRequest(ctx, method, url, payload)
+}
+
+func (s *GeminiService) GenResponseWithPreset(ctx context.Context, userInput string, promptType PromptType) (string, error) {
+	preset, err := s.promptManaget.GetPromptPreset(promptType)
+	if err != nil {
+		return "", err
+	}
+
+	fullPrompt := preset.FormatPrompt(userInput)
+
+	return s.GenResponse(ctx, fullPrompt)
+}
+
+func (s *GeminiService) GenResponseWithMediaPreset(ctx context.Context, userInput string, fileLink string, promptType PromptType) (string, error) {
+	preset, err := s.promptManaget.GetPromptPreset(promptType)
+	if err != nil {
+		return "", err
+	}
+
+	fullPrompt := preset.FormatPrompt(userInput)
+
+	return s.GetResponseWithMedia(ctx, fileLink, fullPrompt)
+}
+
+func (s *GeminiService) executeRequest(ctx context.Context, method string, url string, payload any) (string, error) {
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal payload: %w", err)
@@ -135,7 +219,7 @@ func GenResponse(ctx context.Context, prompt string) (string, error) {
 	req.Header.Set(geminiAuthHeader, apiKey)
 
 	req = req.WithContext(ctx)
-	resp, err := client.Do(req)
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("error sending request: %w", err)
 	}
@@ -163,5 +247,4 @@ func GenResponse(ctx context.Context, prompt string) (string, error) {
 
 	fmt.Println("[INFO] Returning final text from Gemini")
 	return result.Candidates[0].Content.Parts[0].Text, nil
-
 }
