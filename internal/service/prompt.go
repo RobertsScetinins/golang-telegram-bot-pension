@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+const inputPlaceholder = "{input}"
+
 type PromptType string
 
 const (
@@ -61,7 +63,7 @@ func (pm *PromptManager) registerDefaultPresets() {
 			Объяснение: <максимум 40 слов>
 			Источники: <список ссылок, если использовалась проверка в интернете>
 		`,
-		UserPrompt: "Утверждение: {input}",
+		UserPrompt: fmt.Sprintf("Утверждение: %s", inputPlaceholder),
 	}
 
 	pm.presets[PromptTypeAnalyze] = &PromptPreset{
@@ -76,7 +78,7 @@ func (pm *PromptManager) registerDefaultPresets() {
 		- Любые действия или взаимодействия
 		- Общий контекст и настроение
 		`,
-		UserPrompt: "{input}",
+		UserPrompt: inputPlaceholder,
 	}
 
 	pm.presets[PromptTypeExtractText] = &PromptPreset{
@@ -86,7 +88,7 @@ func (pm *PromptManager) registerDefaultPresets() {
 			Если текст находится в таблице, сохраните табличную структуру.
 			Выведите только извлеченный текст без дополнительных комментариев.
 		`,
-		UserPrompt: "Извлеките текст из этого изображения: {input}",
+		UserPrompt: fmt.Sprintf("Извлеките текст из этого изображения: %s", inputPlaceholder),
 	}
 }
 
@@ -101,7 +103,12 @@ func (pm *PromptManager) GetPromptPreset(promptType PromptType) (*PromptPreset, 
 
 // FormatPrompt combines system prompt and user input
 func (p *PromptPreset) FormatPrompt(userInput string) string {
-	formattedUserPrompt := strings.ReplaceAll(p.UserPrompt, "{input}", userInput)
+
+	if strings.TrimSpace(userInput) == "" {
+		return strings.TrimSpace(p.SystemPrompt)
+	}
+
+	formattedUserPrompt := strings.ReplaceAll(p.UserPrompt, inputPlaceholder, userInput)
 
 	return fmt.Sprintf("%s\n\n%s", p.SystemPrompt, formattedUserPrompt)
 }

@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/helpers"
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/service"
@@ -17,14 +16,7 @@ func Look(ctx context.Context, b *bot.Bot, update *models.Update) {
 	geminiService := service.NewGeminiService()
 
 	userText := update.Message.Caption
-	parts := strings.SplitN(userText, " ", 2)
-	hasTextAfterCommand := len(parts) > 1 && strings.TrimSpace(parts[1]) != ""
-
-	var userComment string
-
-	if hasTextAfterCommand {
-		userComment = strings.TrimSpace(parts[1])
-	}
+	userComment, _ := helpers.GetCommandArgs(userText)
 
 	mediaData, err := helpers.ProcessMedia(update)
 	if err != nil {

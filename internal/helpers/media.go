@@ -8,9 +8,8 @@ import (
 )
 
 type MediaData struct {
-	Type          string
-	FileId        string
-	OriginalMedia interface{}
+	Type   string
+	FileId string
 }
 
 type MediaHandler func(mediaType string, mediaObj interface{}) (*MediaData, error)
@@ -45,9 +44,8 @@ func HandlePhoto(mediaType string, mediaObj interface{}) (*MediaData, error) {
 	largest := photos[len(photos)-1]
 
 	return &MediaData{
-		Type:          mediaType,
-		FileId:        largest.FileID,
-		OriginalMedia: mediaObj,
+		Type:   mediaType,
+		FileId: largest.FileID,
 	}, nil
 }
 
