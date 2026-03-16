@@ -1,6 +1,8 @@
 package helpers
 
 import (
+	"errors"
+	"fmt"
 	"mime"
 	"path"
 
@@ -40,7 +42,15 @@ func GetMediaByType(message *models.Message) (string, interface{}) {
 }
 
 func HandlePhoto(mediaType string, mediaObj interface{}) (*MediaData, error) {
-	photos := mediaObj.([]models.PhotoSize)
+	photos, ok := mediaObj.([]models.PhotoSize)
+	if !ok {
+		return nil, fmt.Errorf("invalid photo media type")
+	}
+
+	if len(photos) == 0 {
+		return nil, fmt.Errorf("empty photo array")
+	}
+
 	largest := photos[len(photos)-1]
 
 	return &MediaData{
@@ -50,13 +60,25 @@ func HandlePhoto(mediaType string, mediaObj interface{}) (*MediaData, error) {
 }
 
 func ProcessMedia(update *models.Update) (*MediaData, error) {
-	mediaType, mediaObj := GetMediaByType(update.Message)
+	if mediaData, err := processMessageMedia(update.Message); err == nil {
+		return mediaData, nil
+	}
+
+	if update.Message.ReplyToMessage != nil {
+		return processMessageMedia(update.Message.ReplyToMessage)
+	}
+
+	return nil, errors.New("no supported media found")
+}
+
+func processMessageMedia(message *models.Message) (*MediaData, error) {
+	mediaType, mediaObj := GetMediaByType(message)
 
 	if handler, exists := mediaHandlerMap[mediaType]; exists {
 		return handler(mediaType, mediaObj)
 	}
 
-	return &MediaData{}, nil
+	return nil, errors.New("unsupported media type")
 }
 
 func GetMimeTypeFromUrl(url string) string {
@@ -68,4 +90,9 @@ func GetMimeTypeFromUrl(url string) string {
 	}
 
 	return mimeType
+}
+
+func HasMedia(message *models.Message) bool {
+	mediaType, _ := GetMediaByType(message)
+	return mediaType != ""
 }
