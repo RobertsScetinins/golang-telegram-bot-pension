@@ -28,4 +28,5 @@ func TikTok(ctx context.Context, b *bot.Bot, update *models.Update) {
 	}
 
 	utils.Reply(ctx, b, update, url)
+	utils.Delete(ctx, b, update)
 }

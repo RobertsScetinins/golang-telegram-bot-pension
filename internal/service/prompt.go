@@ -103,7 +103,6 @@ func (pm *PromptManager) GetPromptPreset(promptType PromptType) (*PromptPreset, 
 
 // FormatPrompt combines system prompt and user input
 func (p *PromptPreset) FormatPrompt(userInput string) string {
-
 	if strings.TrimSpace(userInput) == "" {
 		return strings.TrimSpace(p.SystemPrompt)
 	}
