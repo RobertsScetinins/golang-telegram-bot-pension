@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run Bot",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/bot", // adjust path to your main bot package
+            "envFile": "${workspaceFolder}/.env",
+            "args": []
+        }
+    ]
+}

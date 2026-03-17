@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/app"
@@ -48,7 +49,7 @@ func main() {
 
 	r := router.NewRouter()
 
-	r.Register("reel", handlers.Reels)
+	r.Register("instagram", handlers.Instagram)
 	r.Register("tiktok", handlers.TikTok)
 	r.Register("", func(ctx context.Context, b *bot.Bot, update *models.Update) {
 		handlers.RecordMessage(ctx, b, update, db)
@@ -62,6 +63,18 @@ func main() {
 			})
 		})
 
+	botClient.RegisterHandler(bot.HandlerTypeMessageText, "/factcheck", bot.MatchTypePrefix,
+		func(ctx context.Context, botClient *bot.Bot, update *models.Update) {
+			handlers.FactCheck(ctx, botClient, update)
+		})
+
+	botClient.RegisterHandlerMatchFunc(func(update *models.Update) bool {
+		return update.Message != nil && (strings.HasPrefix(update.Message.Text, "/look") || strings.HasPrefix(update.Message.Caption, "/look"))
+	},
+		func(ctx context.Context, bot *bot.Bot, update *models.Update) {
+			handlers.Look(ctx, bot, update)
+		})
+
 	botClient.RegisterHandler(bot.HandlerTypeMessageText, "", bot.MatchTypeContains,
 		func(ctx context.Context, bot *bot.Bot, update *models.Update) {
 			text := update.Message.Text
@@ -69,6 +82,11 @@ func main() {
 			if helpers.IsToxic(text) {
 				handlers.Clown(ctx, bot, update)
 			}
+
+			// depricated for now, maybe one day ...
+			// if update.Message.Chat.Type == models.ChatTypePrivate {
+			// 	handlers.Duplicator(ctx, bot, update)
+			// }
 
 			r.Handle(ctx, bot, update)
 		})
