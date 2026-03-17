@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/database"
-	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/logger"
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/models"
 	"github.com/jackc/pgx/v5"
 )
@@ -37,7 +36,6 @@ func (r *MessageRepository) Save(ctx context.Context, m *models.Message) error {
 }
 
 func (r *MessageRepository) Update(ctx context.Context, m *models.Message) error {
-	logger.DebugJson(m)
 	query := `
 		UPDATE messages
 		SET text=@text, is_edited=@is_edited, updated_at=@updated_at
@@ -57,7 +55,7 @@ func (r *MessageRepository) Update(ctx context.Context, m *models.Message) error
 
 func (r *MessageRepository) GetLastMessages(ctx context.Context, chatID int64, limit int) ([]*models.Message, error) {
 	query := `
-		SELECT id, message_id, username, text, created_at
+		SELECT id, chat_id, message_id, username, text, is_edited, created_at, updated_at
 		FROM messages
 		WHERE chat_id=$1
 		ORDER BY created_at DESC

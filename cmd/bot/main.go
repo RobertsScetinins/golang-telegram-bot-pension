@@ -68,6 +68,11 @@ func main() {
 			handlers.FactCheck(ctx, botClient, update)
 		})
 
+	botClient.RegisterHandler(bot.HandlerTypeMessageText, "/summary", bot.MatchTypePrefix,
+		func(ctx context.Context, b *bot.Bot, update *models.Update) {
+			handlers.Summary(ctx, b, update, app)
+		})
+
 	botClient.RegisterHandlerMatchFunc(func(update *models.Update) bool {
 		return update.Message != nil && (strings.HasPrefix(update.Message.Text, "/look") || strings.HasPrefix(update.Message.Caption, "/look"))
 	},
@@ -91,26 +96,26 @@ func main() {
 			r.Handle(ctx, bot, update)
 		})
 
-	botClient.RegisterHandlerMatchFunc(func(update *models.Update) bool {
-		return update != nil && update.MyChatMember != nil &&
-			(update.MyChatMember.NewChatMember.Member != nil || update.MyChatMember.OldChatMember.Member != nil)
-	},
-		func(ctx context.Context, bot *bot.Bot, update *models.Update) {
-			botID := bot.ID()
-			myChatMember := update.MyChatMember
+	// botClient.RegisterHandlerMatchFunc(func(update *models.Update) bool {
+	// 	return update != nil && update.MyChatMember != nil &&
+	// 		(update.MyChatMember.NewChatMember.Member != nil || update.MyChatMember.OldChatMember.Member != nil)
+	// },
+	// 	func(ctx context.Context, bot *bot.Bot, update *models.Update) {
+	// 		botID := bot.ID()
+	// 		myChatMember := update.MyChatMember
 
-			newMember := myChatMember.NewChatMember
+	// 		newMember := myChatMember.NewChatMember
 
-			if newMember.Type == models.ChatMemberTypeLeft && newMember.Left.User.IsBot &&
-				(newMember.Left.User.ID == botID) {
-				handlers.HandleLeaveChat(ctx, bot, update, app.ChatRepository)
-			}
+	// 		if newMember.Type == models.ChatMemberTypeLeft && newMember.Left.User.IsBot &&
+	// 			(newMember.Left.User.ID == botID) {
+	// 			handlers.HandleLeaveChat(ctx, bot, update, app.ChatRepository)
+	// 		}
 
-			if newMember.Type == models.ChatMemberTypeMember && newMember.Member.User.IsBot &&
-				(newMember.Member.User.ID == botID) {
-				handlers.HandleJoinChat(ctx, bot, update, app.ChatRepository)
-			}
-		})
+	// 		if newMember.Type == models.ChatMemberTypeMember && newMember.Member.User.IsBot &&
+	// 			(newMember.Member.User.ID == botID) {
+	// 			handlers.HandleJoinChat(ctx, bot, update, app.ChatRepository)
+	// 		}
+	// 	})
 
 	botClient.RegisterHandlerMatchFunc(func(update *models.Update) bool {
 		return update != nil && update.EditedMessage != nil

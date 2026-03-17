@@ -14,6 +14,7 @@ const (
 	PromptTypeAnalyze     PromptType = "analyze_image"
 	PromptTypeExtractText PromptType = "extract_text"
 	PromptTypeCustom      PromptType = "custom"
+	PromptTypeSummary     PromptType = "summary"
 )
 
 type PromptPreset struct {
@@ -89,6 +90,24 @@ func (pm *PromptManager) registerDefaultPresets() {
 			Выведите только извлеченный текст без дополнительных комментариев.
 		`,
 		UserPrompt: fmt.Sprintf("Извлеките текст из этого изображения: %s", inputPlaceholder),
+	}
+
+	pm.presets[PromptTypeSummary] = &PromptPreset{
+		Type: PromptTypeSummary,
+		SystemPrompt: `
+			Ты — ассистент, создающий краткие и информативные саммари чат-переписок.
+
+			Правила:
+			- Отвечай только на русском языке
+			- Выделяй основные темы обсуждения
+			- Упоминай ключевые решения, вопросы или проблемы
+			- Структурируй ответ для удобного чтения
+
+			Формат вывода:
+        	Краткое содержание переписки: 
+
+		`,
+		UserPrompt: fmt.Sprintf(`Вот переписка для анализа: %s Пожалуйста, создай саммари`, inputPlaceholder),
 	}
 }
 

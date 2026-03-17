@@ -22,12 +22,13 @@ func UpdateMessage(
 ) {
 	message := update.EditedMessage
 
+	now := time.Now()
 	updatedMessage := &messageModel.Message{
 		ChatID:    message.Chat.ID,
 		MessageId: int64(message.ID),
 		IsEdited:  true,
 		Text:      &message.Text,
-		UpdatedAt: time.Now(),
+		UpdatedAt: &now,
 	}
 
 	err := database.WithTransaction(ctx, db, func(tx pgx.Tx) error {
