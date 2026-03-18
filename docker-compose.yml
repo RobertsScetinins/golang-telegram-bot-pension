@@ -5,8 +5,8 @@ services:
     restart: always
     env_file:
       - .env
-    # labels:
-    #   - "com.centurylinklabs.watchtower.enable=true"
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     stop_grace_period: 30s
     depends_on:
       - postgresql
@@ -41,38 +41,14 @@ services:
     networks:
       - bot_network
 
-  db-import:
-    image: postgres:16
-    container_name: telegram_db_import
-    depends_on:
-      postgresql:
-        condition: service_healthy
-    env_file:
-      - .env
-    environment:
-      PGPASSWORD: ${POSTGRES_PASSWORD}
+  watchtower:
+    image: docker.io/containrrr/watchtower:latest
+    container_name: bot-watchtower
+    restart: unless-stopped
     volumes:
-      - ./db/data_dump.sql:/data_dump.sql
-    networks:
-      - bot_network
-    command: >
-      sh -c "
-        echo 'Waiting for database...' &&
-        sleep 5 &&
-        echo 'Importing data_dump.sql from /db directory...' &&
-        psql -h postgresql -U ${POSTGRES_USER} -d ${POSTGRES_DB} -f /data_dump.sql &&
-        echo 'Import complete!'
-      "
-
-  # watchtower:
-  #   image: docker.io/containrrr/watchtower:latest
-  #   container_name: bot-watchtower
-  #   restart: unless-stopped
-  #   volumes:
-  #     - /var/run/docker.sock:/var/run/docker.sock
-  #   command: --interval 300 --label-enable --cleanup --rolling-restart
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 300 --label-enable --cleanup --rolling-restart
     
-
 networks:
   bot_network:
     driver: bridge
