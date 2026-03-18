@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/database"
@@ -27,6 +28,22 @@ func RecordMessage(
 
 	message := update.Message
 	chat := update.Message.Chat
+
+	if message.Text == "" {
+		return
+	}
+
+	if message.From == nil || message.From.IsBot {
+		return
+	}
+
+	if message.ForwardOrigin != nil {
+		return
+	}
+
+	if strings.HasPrefix(message.Text, "/") {
+		return
+	}
 
 	if helpers.IsUrl(message.Text) {
 		return
