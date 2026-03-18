@@ -26,6 +26,11 @@ func ProcessSummary(messages []*models.Message) (*Summary, error) {
 
 	participantMap := make(map[string]bool)
 
+	// reversing messages for a chronological order
+	for i, j := 0, len(messages)-1; i < j; i, j = i+1, j-1 {
+		messages[i], messages[j] = messages[j], messages[i]
+	}
+
 	res := &Summary{
 		MessageCount: int64(len(messages)),
 		Messages:     make([]Message, 0, len(messages)),
