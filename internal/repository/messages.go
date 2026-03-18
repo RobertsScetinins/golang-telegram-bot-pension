@@ -131,3 +131,16 @@ func (r *MessageRepository) CountMessages(ctx context.Context, chatID int64) (in
 
 	return count, nil
 }
+
+func (r *MessageRepository) DeleteByChatID(ctx context.Context, chatID int64) (int64, error) {
+	query := `DELETE FROM messages WHERE chat_id=$1`
+
+	res, err := r.db.Exec(ctx, query, chatID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to delete messages for chat %d: %w", chatID, err)
+	}
+
+	rowsAffected := res.RowsAffected()
+
+	return rowsAffected, nil
+}

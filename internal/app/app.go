@@ -9,14 +9,13 @@ import (
 type App struct {
 	DB *pgxpool.Pool
 
-	ChatRepository    *repository.ChatRepository
 	MessageRepository *repository.MessageRepository
 }
 
 func New(db *pgxpool.Pool) *App {
 	return &App{
-		DB:                db,
-		ChatRepository:    repository.NewChatRepository(db),
+		DB: db,
+
 		MessageRepository: repository.NewMessageRepository(db),
 	}
 }
