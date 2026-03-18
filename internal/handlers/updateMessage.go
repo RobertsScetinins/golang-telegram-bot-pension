@@ -26,7 +26,6 @@ func UpdateMessage(
 	updatedMessage := &messageModel.Message{
 		ChatID:    message.Chat.ID,
 		MessageId: int64(message.ID),
-		IsEdited:  true,
 		Text:      &message.Text,
 		UpdatedAt: &now,
 	}
@@ -38,7 +37,7 @@ func UpdateMessage(
 			return err
 		}
 
-		if err := txRepo.TrimMessages(ctx, int64(message.ID), 400); err != nil {
+		if err := txRepo.TrimMessages(ctx, int64(message.ID), repository.MaxMessagesPerChat); err != nil {
 			return err
 		}
 

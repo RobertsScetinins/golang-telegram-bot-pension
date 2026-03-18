@@ -5,7 +5,6 @@ CREATE TABLE messages (
     message_id BIGINT NOT NULL,
     username TEXT,
     text TEXT,
-    is_edited BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT now(),
     updated_at TIMESTAMP,
 

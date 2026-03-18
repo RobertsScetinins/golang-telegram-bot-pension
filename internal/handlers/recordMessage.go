@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/database"
@@ -41,10 +40,6 @@ func RecordMessage(
 		return
 	}
 
-	if strings.HasPrefix(message.Text, "/") {
-		return
-	}
-
 	if helpers.IsUrl(message.Text) {
 		return
 	}
@@ -64,7 +59,7 @@ func RecordMessage(
 			return err
 		}
 
-		if err := txRepo.TrimMessages(ctx, chat.ID, 400); err != nil {
+		if err := txRepo.TrimMessages(ctx, chat.ID, repository.MaxMessagesPerChat); err != nil {
 			return err
 		}
 

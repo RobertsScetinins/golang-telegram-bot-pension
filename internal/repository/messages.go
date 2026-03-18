@@ -10,6 +10,10 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+const (
+	MaxMessagesPerChat = 400
+)
+
 type MessageRepository struct {
 	db database.DBTX
 }
@@ -38,15 +42,13 @@ func (r *MessageRepository) Save(ctx context.Context, m *models.Message) error {
 func (r *MessageRepository) Update(ctx context.Context, m *models.Message) error {
 	query := `
 		UPDATE messages
-		SET text=@text, is_edited=@is_edited, updated_at=@updated_at
+		SET text=@text, updated_at=@updated_at
 		WHERE chat_id=@chat_id AND message_id=@message_id
 	`
-
 	_, err := r.db.Exec(ctx, query, pgx.NamedArgs{
 		"chat_id":    m.ChatID,
 		"message_id": m.MessageId,
 		"text":       m.Text,
-		"is_edited":  m.IsEdited,
 		"updated_at": m.UpdatedAt,
 	})
 
@@ -55,7 +57,7 @@ func (r *MessageRepository) Update(ctx context.Context, m *models.Message) error
 
 func (r *MessageRepository) GetLastMessages(ctx context.Context, chatID int64, limit int) ([]*models.Message, error) {
 	query := `
-		SELECT id, chat_id, message_id, username, text, is_edited, created_at, updated_at
+		SELECT id, chat_id, message_id, username, text, created_at, updated_at
 		FROM messages
 		WHERE chat_id=$1
 		ORDER BY created_at DESC
