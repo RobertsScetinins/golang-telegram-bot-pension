@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/helpers"
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/service"
@@ -20,21 +21,21 @@ func Look(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 	mediaData, err := helpers.ProcessMedia(update)
 	if err != nil {
-		fmt.Println("[WARN] Failed to process media")
+		slog.Warn("Failed to process media")
 		utils.Reply(ctx, b, update, "Не удалось обработать медиафайл.")
 		return
 	}
 
 	fileLink, err := service.GetDownloadLink(b, helpers.GetFileUrl(mediaData.FileId, token))
 	if err != nil {
-		fmt.Println("[WARN]", fmt.Sprintf("Failed to get download link for file %s: %v", mediaData.FileId, err))
+		slog.Warn(fmt.Sprintf("Failed to get download link for file %s: %v", mediaData.FileId, err))
 		utils.Reply(ctx, b, update, "Не удалось получить ссылку для скачивания. Попробуйте позже.")
 		return
 	}
 
 	ans, err := geminiService.GenResponseWithMediaPreset(ctx, userComment, fileLink, service.PromptTypeAnalyze)
 	if err != nil {
-		fmt.Println("[WARN] Gemini API failed:", err)
+		slog.Warn("Gemini API failed:", err)
 		utils.Reply(ctx, b, update, "Не удалось обработать изображение. Возможно, формат не поддерживается или сервис временно недоступен.")
 		return
 	}
