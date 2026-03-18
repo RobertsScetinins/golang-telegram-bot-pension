@@ -1,7 +1,6 @@
 services:
   telegram-bot:
-    container_name: telegram_bot
-    build: .
+    image: docker.io/dmitrijsvasilevskis/telegram-bot:latest
     restart: always
     env_file:
       - .env
