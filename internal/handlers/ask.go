@@ -19,7 +19,8 @@ func Ask(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 	mediaData, err := helpers.ProcessMedia(update)
 	if err != nil {
-		if helpers.HasMedia(message) || message.ReplyToMessage != nil {
+		if helpers.HasMedia(message) ||
+			(message.ReplyToMessage != nil && helpers.HasMedia(message.ReplyToMessage)) {
 			utils.Reply(ctx, b, update, "Неподдерживаемый тип медиа.")
 			return
 		}
