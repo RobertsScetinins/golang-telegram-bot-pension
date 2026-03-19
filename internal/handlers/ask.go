@@ -17,34 +17,35 @@ func Ask(ctx context.Context, b *bot.Bot, update *models.Update) {
 		return
 	}
 
-	hasMedia := message.Caption != ""
-
-	token := b.Token()
-	geminiService := service.NewGeminiService()
-
-	var userInput string
-	var mediaData helpers.MediaData
-
-	if hasMedia {
-		media, err := helpers.ProcessMedia(update)
-		if err != nil {
-			fmt.Println("[WARN] Failed to process media")
-			utils.Reply(ctx, b, update, "Не удалось обработать медиафайл.")
+	mediaData, err := helpers.ProcessMedia(update)
+	if err != nil {
+		if helpers.HasMedia(message) || message.ReplyToMessage != nil {
+			utils.Reply(ctx, b, update, "Неподдерживаемый тип медиа.")
 			return
 		}
-
-		userInput = message.Caption
-		mediaData = *media
-	} else {
-		userInput = message.Text
+		// fallback to "no media"
+		mediaData = nil
 	}
 
-	userComment, _ := helpers.GetCommandArgs(userInput)
+	geminiService := service.NewGeminiService()
 
-	if hasMedia {
+	userInput := message.Text
+	if mediaData != nil && message.Caption != "" {
+		userInput = message.Caption
+	}
+
+	userComment, hasArgs := helpers.GetCommandArgs(userInput)
+	if mediaData == nil && !hasArgs {
+		utils.Reply(ctx, b, update, "Введите запрос.")
+		return
+	}
+
+	if mediaData != nil {
+		token := b.Token()
+
 		fileLink, err := service.GetDownloadLink(b, helpers.GetFileUrl(mediaData.FileId, token))
 		if err != nil {
-			fmt.Println("[WARN]", fmt.Sprintf("Failed to get download link for file %s: %v", mediaData.FileId, err))
+			fmt.Printf("[WARN] Failed to get download link for file %s: %v\n", mediaData.FileId, err)
 			utils.Reply(ctx, b, update, "Не удалось получить ссылку для скачивания. Попробуйте позже.")
 			return
 		}
@@ -57,7 +58,6 @@ func Ask(ctx context.Context, b *bot.Bot, update *models.Update) {
 		}
 
 		utils.Reply(ctx, b, update, response)
-
 	} else {
 		response, err := geminiService.GenResponseWithPreset(ctx, userComment, service.PromptTypeCustom)
 		if err != nil {
