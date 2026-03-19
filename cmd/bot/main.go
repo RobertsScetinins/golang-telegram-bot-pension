@@ -80,6 +80,13 @@ func main() {
 			handlers.Look(ctx, bot, update)
 		})
 
+	botClient.RegisterHandlerMatchFunc(func(update *models.Update) bool {
+		return update.Message != nil && (strings.HasPrefix(update.Message.Text, "/ask") || strings.HasPrefix(update.Message.Caption, "/ask"))
+	},
+		func(ctx context.Context, bot *bot.Bot, update *models.Update) {
+			handlers.Ask(ctx, bot, update)
+		})
+
 	botClient.RegisterHandler(bot.HandlerTypeMessageText, "", bot.MatchTypeContains,
 		func(ctx context.Context, bot *bot.Bot, update *models.Update) {
 			text := update.Message.Text
