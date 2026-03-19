@@ -29,13 +29,8 @@ func Ask(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 	geminiService := service.NewGeminiService()
 
-	userInput := message.Text
-	if mediaData != nil && message.Caption != "" {
-		userInput = message.Caption
-	}
-
-	userComment, hasArgs := helpers.GetCommandArgs(userInput)
-	if mediaData == nil && !hasArgs {
+	prompt, err := service.BuildPromptInput(message, mediaData != nil)
+	if err != nil {
 		utils.Reply(ctx, b, update, "Введите запрос.")
 		return
 	}
@@ -50,7 +45,7 @@ func Ask(ctx context.Context, b *bot.Bot, update *models.Update) {
 			return
 		}
 
-		response, err := geminiService.GenResponseWithMediaPreset(ctx, userComment, fileLink, service.PromptTypeCustom)
+		response, err := geminiService.GenResponseWithMediaPreset(ctx, prompt, fileLink, service.PromptTypeCustom)
 		if err != nil {
 			fmt.Println("[WARN] Gemini API failed:", err)
 			utils.Reply(ctx, b, update, "Не удалось обработать изображение. Возможно, формат не поддерживается или сервис временно недоступен.")
@@ -59,7 +54,7 @@ func Ask(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 		utils.Reply(ctx, b, update, response)
 	} else {
-		response, err := geminiService.GenResponseWithPreset(ctx, userComment, service.PromptTypeCustom)
+		response, err := geminiService.GenResponseWithPreset(ctx, prompt, service.PromptTypeCustom)
 		if err != nil {
 			fmt.Println("[ERROR] Gemini API failed:", err)
 			utils.Reply(ctx, b, update, "⚠️ Не удалось обработать запрос. Попробуйте позже.")
