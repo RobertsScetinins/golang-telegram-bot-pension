@@ -1,8 +1,12 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/helpers"
+	"github.com/go-telegram/bot/models"
 )
 
 const inputPlaceholder = "{input}"
@@ -169,4 +173,47 @@ func (p *PromptPreset) FormatPrompt(userInput string) string {
 	formattedUserPrompt := strings.ReplaceAll(p.UserPrompt, inputPlaceholder, userInput)
 
 	return fmt.Sprintf("%s\n\n%s", p.SystemPrompt, formattedUserPrompt)
+}
+
+func BuildPromptInput(message *models.Message, hasMedia bool) (string, error) {
+	var userInput string
+
+	if hasMedia && message.Caption != "" {
+		userInput = message.Caption
+	} else {
+		userInput = message.Text
+	}
+
+	userComment, hasArgs := helpers.GetCommandArgs(userInput)
+	var replyText string
+	if message.ReplyToMessage != nil {
+		reply := message.ReplyToMessage
+
+		if reply.Text != "" {
+			replyText = reply.Text
+		} else if reply.Caption != "" {
+			replyText = reply.Caption
+		}
+	}
+
+	if !hasArgs && replyText == "" && !hasMedia {
+		return "", errors.New("empty prompt")
+	}
+
+	var builder strings.Builder
+
+	if hasArgs {
+		builder.WriteString(userComment)
+	}
+
+	if replyText != "" {
+		if builder.Len() > 0 {
+			builder.WriteString("\n\n")
+		}
+		builder.WriteString("Контекст сообщения:\n")
+		builder.WriteString(replyText)
+	}
+
+	return builder.String(), nil
+
 }
