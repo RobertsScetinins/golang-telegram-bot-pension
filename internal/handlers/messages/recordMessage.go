@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/app"
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/database"
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/helpers"
 	messageModel "github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/models"
@@ -12,14 +13,13 @@ import (
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func RecordMessage(
 	ctx context.Context,
 	b *bot.Bot,
 	update *models.Update,
-	db *pgxpool.Pool,
+	app *app.App,
 ) {
 	if update.Message == nil {
 		return
@@ -52,7 +52,7 @@ func RecordMessage(
 		CreatedAt: time.Now(),
 	}
 
-	err := database.WithTransaction(ctx, db, func(tx pgx.Tx) error {
+	err := database.WithTransaction(ctx, app.DB, func(tx pgx.Tx) error {
 		txRepo := repository.NewMessageRepository(tx)
 
 		if err := txRepo.Save(ctx, currentMessage); err != nil {

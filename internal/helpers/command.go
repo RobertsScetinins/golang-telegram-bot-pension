@@ -16,3 +16,14 @@ func GetCommandArgs(input string) (string, bool) {
 
 	return strings.TrimSpace(parts[1]), true
 }
+
+func ParseCommand(input string) (cmd string) {
+	if input == "" || input[0] != '/' {
+		return ""
+	}
+
+	parts := strings.SplitN(input, " ", 2)
+	cmd = strings.TrimPrefix(parts[0], "/")
+
+	return strings.ToLower(cmd)
+}

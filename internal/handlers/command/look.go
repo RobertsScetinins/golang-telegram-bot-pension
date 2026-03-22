@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/app"
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/helpers"
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/service"
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/utils"
@@ -11,9 +12,9 @@ import (
 	"github.com/go-telegram/bot/models"
 )
 
-func Look(ctx context.Context, b *bot.Bot, update *models.Update) {
+func Look(ctx context.Context, b *bot.Bot, update *models.Update, app *app.App) {
 	token := b.Token()
-	geminiService := service.NewGeminiService()
+	geminiService := app.GeminiService
 
 	userText := update.Message.Caption
 	userComment, _ := helpers.GetCommandArgs(userText)
