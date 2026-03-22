@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/app"
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/helpers"
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/service"
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/utils"
@@ -11,11 +12,8 @@ import (
 	"github.com/go-telegram/bot/models"
 )
 
-func Ask(ctx context.Context, b *bot.Bot, update *models.Update) {
+func Ask(ctx context.Context, b *bot.Bot, update *models.Update, app *app.App) {
 	message := update.Message
-	if message == nil {
-		return
-	}
 
 	mediaData, err := helpers.ProcessMedia(update)
 	if err != nil {
@@ -28,7 +26,7 @@ func Ask(ctx context.Context, b *bot.Bot, update *models.Update) {
 		mediaData = nil
 	}
 
-	geminiService := service.NewGeminiService()
+	geminiService := app.GeminiService
 
 	prompt, err := service.BuildPromptInput(message, mediaData != nil)
 	if err != nil {

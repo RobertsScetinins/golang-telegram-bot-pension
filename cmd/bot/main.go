@@ -5,13 +5,14 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/app"
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/database"
-	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/handlers"
-	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/helpers"
+	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/dispatcher"
+	chatHandler "github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/handlers/chat"
+	embedHandler "github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/handlers/embed"
+	messageHandler "github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/handlers/messages"
 	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/router"
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
@@ -49,59 +50,14 @@ func main() {
 
 	r := router.NewRouter()
 
-	r.Register("instagram", handlers.Instagram)
-	r.Register("tiktok", handlers.TikTok)
-	r.Register("", func(ctx context.Context, b *bot.Bot, update *models.Update) {
-		handlers.RecordMessage(ctx, b, update, db)
-	})
+	r.Register("instagram", embedHandler.Instagram)
+	r.Register("tiktok", embedHandler.TikTok)
 
-	botClient.RegisterHandler(bot.HandlerTypeMessageText, "/status", bot.MatchTypeExact,
-		func(ctx context.Context, botClient *bot.Bot, update *models.Update) {
-			botClient.SendMessage(ctx, &bot.SendMessageParams{
-				ChatID: update.Message.Chat.ID,
-				Text:   "Bot is Active 🚀",
-			})
-		})
-
-	botClient.RegisterHandler(bot.HandlerTypeMessageText, "/factcheck", bot.MatchTypePrefix,
-		func(ctx context.Context, botClient *bot.Bot, update *models.Update) {
-			handlers.FactCheck(ctx, botClient, update)
-		})
-
-	botClient.RegisterHandler(bot.HandlerTypeMessageText, "/summary", bot.MatchTypePrefix,
-		func(ctx context.Context, b *bot.Bot, update *models.Update) {
-			handlers.Summary(ctx, b, update, app)
-		})
-
-	botClient.RegisterHandlerMatchFunc(func(update *models.Update) bool {
-		return update.Message != nil && (strings.HasPrefix(update.Message.Text, "/look") || strings.HasPrefix(update.Message.Caption, "/look"))
-	},
-		func(ctx context.Context, bot *bot.Bot, update *models.Update) {
-			handlers.Look(ctx, bot, update)
-		})
-
-	botClient.RegisterHandlerMatchFunc(func(update *models.Update) bool {
-		return update.Message != nil && (strings.HasPrefix(update.Message.Text, "/ask") || strings.HasPrefix(update.Message.Caption, "/ask"))
-	},
-		func(ctx context.Context, bot *bot.Bot, update *models.Update) {
-			handlers.Ask(ctx, bot, update)
-		})
-
-	botClient.RegisterHandler(bot.HandlerTypeMessageText, "", bot.MatchTypeContains,
-		func(ctx context.Context, bot *bot.Bot, update *models.Update) {
-			text := update.Message.Text
-
-			if helpers.IsToxic(text) {
-				handlers.Clown(ctx, bot, update)
-			}
-
-			// depricated for now, maybe one day ...
-			// if update.Message.Chat.Type == models.ChatTypePrivate {
-			// 	handlers.Duplicator(ctx, bot, update)
-			// }
-
-			r.Handle(ctx, bot, update)
-		})
+	botClient.RegisterHandlerMatchFunc(
+		func(update *models.Update) bool {
+			return update != nil && update.Message != nil
+		},
+		dispatcher.MainHandler(app, r))
 
 	botClient.RegisterHandlerMatchFunc(func(update *models.Update) bool {
 		return update != nil && update.MyChatMember != nil &&
@@ -115,14 +71,14 @@ func main() {
 
 			if newMember.Type == models.ChatMemberTypeLeft && newMember.Left.User.IsBot &&
 				(newMember.Left.User.ID == botID) {
-				handlers.HandleLeaveChat(ctx, bot, update, app.DB)
+				chatHandler.HandleLeaveChat(ctx, bot, update, app.DB)
 			}
 		})
 
 	botClient.RegisterHandlerMatchFunc(func(update *models.Update) bool {
 		return update != nil && update.EditedMessage != nil
 	}, func(ctx context.Context, bot *bot.Bot, update *models.Update) {
-		handlers.UpdateMessage(ctx, bot, update, db)
+		messageHandler.UpdateMessage(ctx, bot, update, db)
 	})
 
 	log.Println("Bot started")

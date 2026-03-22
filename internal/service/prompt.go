@@ -210,10 +210,9 @@ func BuildPromptInput(message *models.Message, hasMedia bool) (string, error) {
 		if builder.Len() > 0 {
 			builder.WriteString("\n\n")
 		}
-		builder.WriteString("Контекст сообщения:\n")
+		builder.WriteString("Комментарий пользователя:\n")
 		builder.WriteString(replyText)
 	}
 
 	return builder.String(), nil
-
 }
