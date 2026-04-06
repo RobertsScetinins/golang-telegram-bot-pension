@@ -1,8 +1,12 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/Dmitrijs-Vasilevskis/go-telegram-bot/internal/helpers"
+	"github.com/go-telegram/bot/models"
 )
 
 const inputPlaceholder = "{input}"
@@ -92,6 +96,42 @@ func (pm *PromptManager) registerDefaultPresets() {
 		UserPrompt: fmt.Sprintf("Извлеките текст из этого изображения: %s", inputPlaceholder),
 	}
 
+	pm.presets[PromptTypeCustom] = &PromptPreset{
+		Type: PromptTypeCustom,
+		SystemPrompt: `
+			Ты — универсальный ИИ-помощник, который адаптируется под любые задачи пользователя.
+
+			ТВОЙ ХАРАКТЕР:
+			- Дружелюбный, но не приторный
+			- Помогаешь по делу, без воды
+			- Если не знаешь — честно говоришь, что не знаешь
+			- Можешь пошутить, но только если это уместно
+			- Адаптируешься под стиль общения пользователя
+
+			ТВОИ ВОЗМОЖНОСТИ:
+			- Отвечаешь на вопросы любой тематики
+			- Помогаешь с написанием текстов, кода, писем
+			- Объясняешь сложные вещи простым языком
+			- Даёшь советы и рекомендации
+			- Можешь выступать в роли эксперта в разных областях
+
+			ПРАВИЛА ОТВЕТОВ:
+			- Отвечай на том же языке, на котором написан запрос
+			- Если просят что-то конкретное — делай именно это
+			- Если просят совета — объясни плюсы и минусы
+			- Если просят объяснить — начни с простого, потом углубляй
+			- Для кода: давай готовые примеры с комментариями
+			- Для текстов: предлагай варианты и улучшения
+
+			ЧЕГО НЕ ДЕЛАТЬ:
+			- Не выдумывай факты
+			- Не давай медицинских/юридических консультаций (предупреди, что это только для информации)
+			- Не поддерживай вредные или опасные действия
+			- Не будь слишком формальным, если не просят
+		`,
+		UserPrompt: fmt.Sprintf(`Запрос пользователя: %s`, inputPlaceholder),
+	}
+
 	pm.presets[PromptTypeSummary] = &PromptPreset{
 		Type: PromptTypeSummary,
 		SystemPrompt: `
@@ -133,4 +173,46 @@ func (p *PromptPreset) FormatPrompt(userInput string) string {
 	formattedUserPrompt := strings.ReplaceAll(p.UserPrompt, inputPlaceholder, userInput)
 
 	return fmt.Sprintf("%s\n\n%s", p.SystemPrompt, formattedUserPrompt)
+}
+
+func BuildPromptInput(message *models.Message, hasMedia bool) (string, error) {
+	var userInput string
+
+	if hasMedia && message.Caption != "" {
+		userInput = message.Caption
+	} else {
+		userInput = message.Text
+	}
+
+	userComment, hasArgs := helpers.GetCommandArgs(userInput)
+	var replyText string
+	if message.ReplyToMessage != nil {
+		reply := message.ReplyToMessage
+
+		if reply.Text != "" {
+			replyText = reply.Text
+		} else if reply.Caption != "" {
+			replyText = reply.Caption
+		}
+	}
+
+	if !hasArgs && replyText == "" && !hasMedia {
+		return "", errors.New("empty prompt")
+	}
+
+	var builder strings.Builder
+
+	if hasArgs {
+		builder.WriteString(userComment)
+	}
+
+	if replyText != "" {
+		if builder.Len() > 0 {
+			builder.WriteString("\n\n")
+		}
+		builder.WriteString("Комментарий пользователя:\n")
+		builder.WriteString(replyText)
+	}
+
+	return builder.String(), nil
 }
